@@ -91,7 +91,7 @@ export function candidateConverseCodeProofFromPpa({
     // do not rename entity projections into Code's reflexive triple maps.
     const evidence = witnessesOfCells(context);
     const sourceKey = termKey(source);
-    if (!context.some(cell => termKey(cell) === sourceKey) &&
+    if (!context.some(cell => termKey({subject: cell.subject, predicate: cell.predicate, object: cell.object}) === sourceKey) &&
         !evidence.some(w => termKey(w.domain) === sourceKey)) return refuse("unwitnessed-source");
     const cellwise = evidence.filter(w => w.generator === "converse");
     const route = routeOf(cellwise, source, target);
