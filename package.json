@@ -19,7 +19,7 @@
     }
   },
   "scripts": {
-    "check": "node --check src/index.mts",
+    "check": "node --check src/index.mts && node --check src/converse-code-bridge.mts",
     "test": "node --test test/*.test.mjs",
     "verify": "npm run check && npm test"
   },
