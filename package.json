@@ -12,6 +12,10 @@
     ".": {
       "types": "./src/index.mts",
       "import": "./src/index.mts"
+    },
+    "./converse-code-bridge": {
+      "types": "./src/converse-code-bridge.mts",
+      "import": "./src/converse-code-bridge.mts"
     }
   },
   "scripts": {
