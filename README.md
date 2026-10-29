@@ -58,3 +58,48 @@ codec, four generator classes, witnessed route, and
 narrows the former `Term = unknown` boundary to finite JSON values, makes route
 tie-breaking independent of evidence order, and promotes the filepath from a
 string to an AST with a separately checkable codec.
+
+## Explicit PPA -> Code converse leg (draft)
+
+The subpath export `./converse-code-bridge` exposes
+`candidateConverseCodeProofFromPpa({context,source,target})`. It reuses
+**this package's existing** `witnessesOfCells`, `routeOf`, term-key
+normalization and POSIX path codec. Given an externally source-admitted
+relational context, it derives only a **converse-only** route between
+cell-shaped terms, returning a Code finite-generative-structure *candidate*,
+its typed source and target keys, and its canonical generator path. It performs
+no hashing, storage, file I/O, attestation, typechecker bypass or side effects.
+
+This is a deliberate **partial translation**, not a license to equate generator
+names between independently defined categories:
+
+| PPA witness | PPA domain → codomain | Code interpretation | Handoff |
+| --- | --- | --- | --- |
+| converse | predication cell → reversed predication cell | reversed predication cell | candidate allowed |
+| subject-projection | predication cell → **bare entity** | reflexive subject **cell** | non-liftable |
+| object-projection | predication cell → **bare entity** | reflexive object **cell** | non-liftable |
+| `is-a` specialization | object entity → subject entity | predicate-coordinate map of a cell | non-liftable |
+
+A source of either an entity or a cell is permitted for **refusal diagnosis**,
+but a successful Code candidate contains only string-valued predication cells
+with exact keys and finite Code bounds. It derives **no source-independent
+subject/object positions** from the diagonal utterance seed; the original
+Science conservation theorem remains authoritative. An empty identity path
+does not establish an external source act.
+
+The returned data is **not** a qualified proof: an independent consumer must
+commit the candidate `structure` using Code's existing
+`identifyFiniteGenerativeStructure` (with Data SEN's
+`EMPTY_WITNESS_ROOT`), commit the named `sourceKey`, `targetKey` and
+`path` using Data's existing `identifyProofPathWitness`, then replay **both
+actual byte carriers** using Code's `qualifyGenerativeProofPath`. Only then
+may the result be bound through Code's existing proof-composition and
+immutable-content-custody path. Neither a valid candidate nor a content NI
+proves observation, execution, authority, or Yoneda cone commutation.
+
+The source/real-time consumer acceptance remains on
+[proof-pathing engineering #2](https://github.com/red-cup-engineering/proof-pathing-engineering-services-section/issues/2);
+the separate content-addressed proof closure is being reviewed in
+[Code #174](https://github.com/red-cup-engineering/computer-code-engineering-services-section/pull/174).
+This subpath deliberately contains **no second address format, hash
+implementation, record registry, storage engine or theorem prover**.

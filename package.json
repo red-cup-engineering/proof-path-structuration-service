@@ -12,11 +12,15 @@
     ".": {
       "types": "./src/index.mts",
       "import": "./src/index.mts"
+    },
+    "./converse-code-bridge": {
+      "types": "./src/converse-code-bridge.mts",
+      "import": "./src/converse-code-bridge.mts"
     }
   },
   "scripts": {
-    "check": "node --check src/index.mts",
-    "test": "node --test test/*.test.mjs",
+    "check": "node --experimental-strip-types --check src/index.mts && node --experimental-strip-types --check src/converse-code-bridge.mts",
+    "test": "node --experimental-strip-types --test test/*.test.mjs",
     "verify": "npm run check && npm test"
   },
   "sideEffects": false,
