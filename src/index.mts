@@ -188,7 +188,7 @@ export type StructurationRequest<A extends AddressableTerm = AddressableTerm> = 
   specializationPredicate?: AddressableTerm;
 }>;
 
-class ValidationError extends TypeError {
+class AdmissionError extends TypeError {
   readonly code: Exclude<RefusalCode, "unearned-path">;
 
   constructor(code: Exclude<RefusalCode, "unearned-path">, message: string) {
@@ -208,18 +208,18 @@ const SAFE_BYTE = /^[A-Za-z0-9._-]$/u;
 function canonicalValue(value: unknown, ancestors = new Set<object>()): AddressableTerm {
   if (value === null || typeof value === "string" || typeof value === "boolean") return value;
   if (typeof value === "number") {
-    if (!Number.isFinite(value)) throw new ValidationError("unaddressable-term", "numbers must be finite JSON values");
+    if (!Number.isFinite(value)) throw new AdmissionError("unaddressable-term", "numbers must be finite JSON values");
     return Object.is(value, -0) ? 0 : value;
   }
-  if (typeof value !== "object") throw new ValidationError("unaddressable-term", "terms must be finite JSON values");
-  if (ancestors.has(value)) throw new ValidationError("unaddressable-term", "cyclic values are not addressable");
+  if (typeof value !== "object") throw new AdmissionError("unaddressable-term", "terms must be finite JSON values");
+  if (ancestors.has(value)) throw new AdmissionError("unaddressable-term", "cyclic values are not addressable");
 
   const next = new Set(ancestors);
   next.add(value);
   if (Array.isArray(value)) {
     const out: AddressableTerm[] = [];
     for (let index = 0; index < value.length; index += 1) {
-      if (!Object.hasOwn(value, index)) throw new ValidationError("unaddressable-term", "sparse arrays are not JSON values");
+      if (!Object.hasOwn(value, index)) throw new AdmissionError("unaddressable-term", "sparse arrays are not JSON values");
       out.push(canonicalValue(value[index], next));
     }
     return out;
@@ -227,7 +227,7 @@ function canonicalValue(value: unknown, ancestors = new Set<object>()): Addressa
 
   const prototype = Object.getPrototypeOf(value);
   if (prototype !== Object.prototype && prototype !== null) {
-    throw new ValidationError("unaddressable-term", "only plain JSON objects are addressable");
+    throw new AdmissionError("unaddressable-term", "only plain JSON objects are addressable");
   }
   const out: Record<string, AddressableTerm> = {};
   for (const key of Object.keys(value as Record<string, unknown>).sort()) {
@@ -270,19 +270,19 @@ export function sanitizeSegment(value: string): string {
 export function desanitizeSegment(value: string): string {
   if (value === "~e") return "";
   if (value === "" || value === "." || value === ".." || value.startsWith(".")) {
-    throw new ValidationError("invalid-request", "path segment is empty, hidden, or traversal-bearing");
+    throw new AdmissionError("invalid-request", "path segment is empty, hidden, or traversal-bearing");
   }
   const bytes: number[] = [];
   for (let index = 0; index < value.length;) {
     const character = value[index]!;
     if (character === "~") {
       const hex = value.slice(index + 1, index + 3);
-      if (!/^[0-9a-f]{2}$/u.test(hex)) throw new ValidationError("invalid-request", "path segment has an invalid escape");
+      if (!/^[0-9a-f]{2}$/u.test(hex)) throw new AdmissionError("invalid-request", "path segment has an invalid escape");
       bytes.push(Number.parseInt(hex, 16));
       index += 3;
       continue;
     }
-    if (!SAFE_BYTE.test(character)) throw new ValidationError("invalid-request", "path segment contains a noncanonical raw byte");
+    if (!SAFE_BYTE.test(character)) throw new AdmissionError("invalid-request", "path segment contains a noncanonical raw byte");
     bytes.push(character.charCodeAt(0));
     index += 1;
   }
@@ -290,9 +290,9 @@ export function desanitizeSegment(value: string): string {
   try {
     decoded = decoder.decode(Uint8Array.from(bytes));
   } catch {
-    throw new ValidationError("invalid-request", "path segment is not valid UTF-8");
+    throw new AdmissionError("invalid-request", "path segment is not valid UTF-8");
   }
-  if (sanitizeSegment(decoded) !== value) throw new ValidationError("invalid-request", "path segment is not canonical");
+  if (sanitizeSegment(decoded) !== value) throw new AdmissionError("invalid-request", "path segment is not canonical");
   return decoded;
 }
 
@@ -316,11 +316,11 @@ function witnessKey(witness: GeneratorWitness): string {
 
 /** Validate, sort, and structurally deduplicate direct generator evidence. */
 export function normalizeWitnesses(values: readonly GeneratorWitness[]): readonly GeneratorWitness[] {
-  if (!Array.isArray(values)) throw new ValidationError("invalid-witness", "witnesses must be an array");
+  if (!Array.isArray(values)) throw new AdmissionError("invalid-witness", "witnesses must be an array");
   const found = new Map<string, GeneratorWitness>();
   for (const value of values) {
     if (!value || typeof value !== "object" || !isGenerator(value.generator)) {
-      throw new ValidationError("invalid-witness", "every witness must name one canonical generator");
+      throw new AdmissionError("invalid-witness", "every witness must name one canonical generator");
     }
     canonicalValue(value.domain);
     canonicalValue(value.codomain);
@@ -332,7 +332,7 @@ export function normalizeWitnesses(values: readonly GeneratorWitness[]): readonl
 
 function resourceTypeOf(value: unknown): string {
   if (typeof value !== "string" || value.trim() === "") {
-    throw new ValidationError("invalid-request", "a proof coordinate requires a nonempty resource type");
+    throw new AdmissionError("invalid-request", "a proof coordinate requires a nonempty resource type");
   }
   return value;
 }
@@ -372,10 +372,10 @@ export function settleProofCoordinate(input?: {
       route,
     });
   } catch (error) {
-    if (error instanceof ValidationError && error.code === "invalid-witness") {
+    if (error instanceof AdmissionError && error.code === "invalid-witness") {
       return Object.freeze({ ok: false, reason: "invalid-witness" });
     }
-    if (error instanceof ValidationError && error.message.includes("resource type")) {
+    if (error instanceof AdmissionError && error.message.includes("resource type")) {
       return Object.freeze({ ok: false, reason: "invalid-resource-type" });
     }
     return Object.freeze({ ok: false, reason: "invalid-coordinate" });
@@ -454,12 +454,12 @@ export function witnessesOfCells(
   cells: readonly RelationalCell[],
   specializationPredicate: AddressableTerm = "is-a",
 ): readonly GeneratorWitness[] {
-  if (!Array.isArray(cells)) throw new ValidationError("invalid-witness", "context must be an array of relational cells");
+  if (!Array.isArray(cells)) throw new AdmissionError("invalid-witness", "context must be an array of relational cells");
   const specializationKey = termKey(specializationPredicate);
   const witnesses: GeneratorWitness[] = [];
   for (const value of cells) {
     if (!value || typeof value !== "object" || !("subject" in value) || !("predicate" in value) || !("object" in value)) {
-      throw new ValidationError("invalid-witness", "every context entry must be a relational cell");
+      throw new AdmissionError("invalid-witness", "every context entry must be a relational cell");
     }
     canonicalValue(value.subject);
     canonicalValue(value.predicate);
@@ -559,7 +559,7 @@ export type ParseProofPathResult =
 
 function parsedNode(segment: string, role: "root" | "codomain"): TermSegmentNode {
   const key = desanitizeSegment(segment);
-  if (!isCanonicalTermKey(key)) throw new ValidationError("invalid-request", "path segment is not a canonical term key");
+  if (!isCanonicalTermKey(key)) throw new AdmissionError("invalid-request", "path segment is not a canonical term key");
   return Object.freeze({ type: "term-segment", role, key, segment });
 }
 
@@ -614,27 +614,27 @@ export function checkProofPathAst(ast: PosixFilepathAst, witnesses: readonly Gen
 /** The one public fold requested by the section. It never throws for admitted call shapes. */
 export function structureSemioticAtom<A extends AddressableTerm>(request: StructurationRequest<A>): StructurationResult<A> {
   const atom = request?.atom;
-  const rejection = (reason: RefusalCode, witnessCount = 0): StructurationResult<A> => Object.freeze({
+  const refusal = (reason: RefusalCode, witnessCount = 0): StructurationResult<A> => Object.freeze({
     ok: false,
     atom,
     reason,
     diagnostics: Object.freeze({ witnessCount, stepCount: 0 }),
   });
   try {
-    if (!request || typeof request !== "object" || !("atom" in request) || !("root" in request)) return rejection("invalid-request");
+    if (!request || typeof request !== "object" || !("atom" in request) || !("root" in request)) return refusal("invalid-request");
     canonicalValue(atom);
     canonicalValue(request.root);
     const carriesContext = Object.hasOwn(request, "context");
     const carriesWitnesses = Object.hasOwn(request, "witnesses");
-    if (carriesContext === carriesWitnesses) return rejection("ambiguous-evidence");
+    if (carriesContext === carriesWitnesses) return refusal("ambiguous-evidence");
 
     const witnesses = carriesContext
       ? witnessesOfCells(request.context!, request.specializationPredicate ?? "is-a")
       : normalizeWitnesses(request.witnesses!);
     const route = routeOf(witnesses, request.root, atom);
-    if (!route) return rejection("unearned-path", witnesses.length);
+    if (!route) return refusal("unearned-path", witnesses.length);
     const ast = astOfRoute(route);
-    if (!checkProofPathAst(ast, witnesses)) return rejection("invalid-witness", witnesses.length);
+    if (!checkProofPathAst(ast, witnesses)) return refusal("invalid-witness", witnesses.length);
     return Object.freeze({
       ok: true,
       atom,
@@ -642,7 +642,7 @@ export function structureSemioticAtom<A extends AddressableTerm>(request: Struct
       diagnostics: Object.freeze({ witnessCount: witnesses.length, stepCount: ast.steps.length }),
     });
   } catch (error) {
-    return rejection(error instanceof ValidationError ? error.code : "invalid-request");
+    return refusal(error instanceof AdmissionError ? error.code : "invalid-request");
   }
 }
 
@@ -655,11 +655,11 @@ export function catalogProofPaths<A extends AddressableTerm>(
 ): ProofPathCatalog<A> {
   if (!Array.isArray(requests)) throw new TypeError("proof-path catalog requests must be an array");
   const entries = new Map<string, ProofPathCatalogEntry<A>>();
-  const rejections: StructurationResult<A>[] = [];
+  const refusals: StructurationResult<A>[] = [];
   for (const request of requests) {
     const result = structureSemioticAtom<A>(request);
     if (!result.ok) {
-      rejections.push(result);
+      refusals.push(result);
       continue;
     }
     const address = renderProofPathAst(result.ast);
@@ -668,7 +668,7 @@ export function catalogProofPaths<A extends AddressableTerm>(
   return Object.freeze({
     type: "proof-path-catalog",
     entries: Object.freeze([...entries.entries()].sort(([left], [right]) => compareCanonicalKeys(left, right)).map(([, entry]) => entry)),
-    refusals: Object.freeze(rejections),
+    refusals: Object.freeze(refusals),
   });
 }
 
