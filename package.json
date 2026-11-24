@@ -1,0 +1,41 @@
+{
+  "name": "@red-cup-engineering/proof-path-structuration-service",
+  "version": "0.1.4-dev.0",
+  "private": false,
+  "type": "module",
+  "description": "Pure witnessed fold from a semiotic atom to a canonical relative POSIX filepath AST.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/red-cup-engineering/proof-path-structuration-service.git"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./converse-code-bridge": {
+      "types": "./dist/converse-code-bridge.d.mts",
+      "import": "./dist/converse-code-bridge.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "verify": "npm run check",
+    "prepare": "npm run build"
+  },
+  "sideEffects": false,
+  "license": "MIT",
+  "funding": {
+    "type": "individual",
+    "url": "https://github.com/561-group/.github/blob/main/TIPS.md"
+  },
+  "files": [
+    "dist",
+    "src",
+    "content"
+  ],
+  "devDependencies": {
+    "typescript": "5.8.3"
+  }
+}
