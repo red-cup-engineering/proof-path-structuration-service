@@ -1,3 +1,4 @@
+import { canonicalJson } from "@red-cup-engineering/json-engine/canonical-json";
 /**
  * The recovered proof-pathing fold, normalized to the live file-service
  * boundary.  It is deliberately pure: the target atom and the witnesses are
@@ -337,8 +338,8 @@ function resourceTypeOf(value: unknown): string {
   return value;
 }
 
-function canonicalJson(value: unknown): string {
-  return JSON.stringify(canonicalValue(value));
+function coordinateText(value: unknown): string {
+  return canonicalJson(canonicalValue(value));
 }
 
 /**
@@ -388,7 +389,7 @@ export function encodeProofCoordinate(coordinate: ProofCoordinate): string {
   if (!checked.ok || coordinate.type !== "rmn-proof-coordinate" || coordinate.version !== 1) {
     throw new TypeError("a settled RMN proof coordinate is required");
   }
-  return canonicalJson(checked.coordinate);
+  return coordinateText(checked.coordinate);
 }
 
 /**
@@ -410,7 +411,7 @@ export function parseProofCoordinate(value: string): ParseProofCoordinateResult 
   try {
     const encoded = desanitizeSegment(value.slice(5));
     const parsed: unknown = JSON.parse(encoded);
-    if (canonicalJson(parsed) !== encoded) return Object.freeze({ ok: false, reason: "noncanonical-coordinate" });
+    if (coordinateText(parsed) !== encoded) return Object.freeze({ ok: false, reason: "noncanonical-coordinate" });
     if (!parsed || typeof parsed !== "object" || (parsed as { type?: unknown }).type !== "rmn-proof-coordinate" || (parsed as { version?: unknown }).version !== 1) {
       return Object.freeze({ ok: false, reason: "malformed-coordinate" });
     }
@@ -442,7 +443,7 @@ export function envelopeProofCoordinate(coordinate: ProofCoordinate, witnesses: 
       throw new TypeError("a cryptographic witness requires type, algorithm, and value");
     }
     return Object.freeze({ type: witness.type, algorithm: witness.algorithm, value: witness.value });
-  }).sort((left, right) => compareCanonicalKeys(canonicalJson(left), canonicalJson(right)));
+  }).sort((left, right) => compareCanonicalKeys(coordinateText(left), coordinateText(right)));
   return Object.freeze({ type: "rmn-proof-envelope", coordinate, witnesses: Object.freeze(normalized) });
 }
 

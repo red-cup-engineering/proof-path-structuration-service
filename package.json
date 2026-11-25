@@ -35,6 +35,9 @@
     "src",
     "content"
   ],
+  "dependencies": {
+    "@red-cup-engineering/json-engine": "^0.5.0"
+  },
   "devDependencies": {
     "typescript": "5.8.3"
   }
